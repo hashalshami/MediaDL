@@ -3,7 +3,7 @@ requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
-name = "mediadl"
+name = "mediadl-engine"
 version = "0.1.0"
 description = "A professional, async-friendly media downloader built on top of yt-dlp."
 readme = "README.md"
