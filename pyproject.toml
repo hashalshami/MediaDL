@@ -15,6 +15,7 @@ classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
   "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
@@ -24,6 +25,12 @@ classifiers = [
   "Topic :: Multimedia :: Video",
 ]
 dependencies = ["yt-dlp[default]>=2026.8.19,<2027"]
+
+[project.urls]
+Homepage = "https://github.com/hashalshami/MediaDL"
+Repository = "https://github.com/hashalshami/MediaDL"
+Issues = "https://github.com/hashalshami/MediaDL/issues"
+Changelog = "https://github.com/hashalshami/MediaDL/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "pytest-asyncio>=1", "ruff>=0.12", "mypy>=1.17", "build>=1.3"]
