@@ -5,6 +5,7 @@ from typing import Any
 
 from ..models import DownloadResult, MediaInfo
 
+
 class ExtractionEngine(ABC):
     @abstractmethod
     def inspect(self, url: str, *, playlist: bool = False) -> MediaInfo: ...
