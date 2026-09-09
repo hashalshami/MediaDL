@@ -11,7 +11,7 @@ from .config import DownloaderConfig
 from .engines.ytdlp import YTDlpEngine
 from .exceptions import DownloadError, UnsupportedURLError
 from .formats.selector import select_format, sort_formats
-from .models import DownloadResult, MediaInfo, ProgressCallback, ProgressEvent
+from .models import DownloadResult, Format, MediaInfo, ProgressCallback, ProgressEvent
 from .utils import format_filesize
 
 
@@ -45,7 +45,7 @@ class Downloader:
         self._validate_url(url)
         return self._engine.inspect(url)
 
-    def formats(self, url: str):
+    def formats(self, url: str) -> list[Format]:
         return sort_formats(list(self.inspect(url).formats))
 
     def download(
@@ -79,6 +79,8 @@ class Downloader:
         template = filename_template or self.config.filename_template
         template = str(out / template)
         attempts = self.config.retries if retries is None else retries
+        if attempts < 0:
+            raise ValueError("retries must be >= 0")
         last_error: Exception | None = None
 
         def hook(data: dict[str, Any]) -> None:
@@ -133,7 +135,7 @@ class Downloader:
                 result = self._engine.download(url, options)
                 if size_limit is not None:
                     limit = format_filesize(size_limit)
-                    if limit and result.filesize > limit:
+                    if result.filesize > limit:
                         try:
                             result.path.unlink(missing_ok=True)
                         finally:
@@ -180,7 +182,7 @@ class AsyncDownloader:
     async def inspect(self, url: str) -> MediaInfo:
         return await asyncio.to_thread(self._sync.inspect, url)
 
-    async def formats(self, url: str):
+    async def formats(self, url: str) -> list[Format]:
         return await asyncio.to_thread(self._sync.formats, url)
 
     async def download(self, url: str, **kwargs: Any) -> DownloadResult:
