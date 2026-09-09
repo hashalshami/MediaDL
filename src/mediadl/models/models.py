@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 ProgressCallback = Callable[["ProgressEvent"], Any]
+
 
 @dataclass(frozen=True, slots=True)
 class Format:
@@ -27,6 +29,7 @@ class Format:
     def estimated_size(self) -> int | None:
         return self.filesize or self.filesize_approx
 
+
 @dataclass(frozen=True, slots=True)
 class MediaInfo:
     id: str
@@ -41,6 +44,7 @@ class MediaInfo:
     formats: tuple[Format, ...] = field(default_factory=tuple)
     raw: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
+
 @dataclass(frozen=True, slots=True)
 class ProgressEvent:
     status: str
@@ -52,6 +56,7 @@ class ProgressEvent:
     filename: Path | None = None
     message: str | None = None
 
+
 @dataclass(frozen=True, slots=True)
 class DownloadResult:
     path: Path
@@ -61,6 +66,7 @@ class DownloadResult:
     duration: float | None
     format: Format | None
     info: MediaInfo
+
 
 @dataclass(frozen=True, slots=True)
 class PlaylistResult:
