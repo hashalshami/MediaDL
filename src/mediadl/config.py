@@ -6,7 +6,8 @@ from pathlib import Path
 @dataclass(frozen=True, slots=True)
 class DownloaderConfig:
     output_dir: Path = Path("downloads")
-    filename_template: str = "{title} [{id}].{ext}"
+    # yt-dlp output-template syntax is used intentionally; it keeps the full power of its naming system.
+    filename_template: str = "%(title)s [%(id)s].%(ext)s"
     quality: str = "best"
     merge_format: str = "mp4"
     retries: int = 3
