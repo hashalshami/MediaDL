@@ -15,7 +15,7 @@ MediaDL provides a clean API for inspecting and downloading supported public med
 ## Install
 
 ```bash
-pip install mediadl
+pip install mediadl-engine
 ```
 
 Development install:
