@@ -9,6 +9,7 @@ from ..exceptions import DownloadError, ExtractionError
 from ..models import DownloadResult, Format, MediaInfo
 from .base import ExtractionEngine
 
+
 class YTDlpEngine(ExtractionEngine):
     def __init__(self, base_options: dict[str, Any] | None = None) -> None:
         self.base_options = dict(base_options or {})
@@ -22,16 +23,26 @@ class YTDlpEngine(ExtractionEngine):
     @staticmethod
     def _format(item: dict[str, Any]) -> Format:
         return Format(
-            id=str(item.get("format_id", "")), ext=item.get("ext"),
-            resolution=item.get("resolution"), width=item.get("width"), height=item.get("height"),
-            fps=item.get("fps"), filesize=item.get("filesize"), filesize_approx=item.get("filesize_approx"),
-            tbr=item.get("tbr"), vcodec=item.get("vcodec"), acodec=item.get("acodec"),
+            id=str(item.get("format_id", "")),
+            ext=item.get("ext"),
+            resolution=item.get("resolution"),
+            width=item.get("width"),
+            height=item.get("height"),
+            fps=item.get("fps"),
+            filesize=item.get("filesize"),
+            filesize_approx=item.get("filesize_approx"),
+            tbr=item.get("tbr"),
+            vcodec=item.get("vcodec"),
+            acodec=item.get("acodec"),
             has_video=bool(item.get("vcodec") not in (None, "none")),
-            has_audio=bool(item.get("acodec") not in (None, "none")), protocol=item.get("protocol"),
+            has_audio=bool(item.get("acodec") not in (None, "none")),
+            protocol=item.get("protocol"),
         )
 
     def inspect(self, url: str, *, playlist: bool = False) -> MediaInfo:
-        opts = self._options({"skip_download": True, "noplaylist": not playlist})
+        opts = self._options(
+            {"skip_download": True, "noplaylist": not playlist}
+        )
         try:
             with yt_dlp.YoutubeDL(opts) as ydl:
                 data = ydl.extract_info(url, download=False)
@@ -54,29 +65,47 @@ class YTDlpEngine(ExtractionEngine):
                     if candidates:
                         filename = candidates[0]
                 if not filename.exists():
-                    raise DownloadError("yt-dlp completed but the output file was not found")
+                    raise DownloadError(
+                        "yt-dlp completed but the output file was not found"
+                    )
         except DownloadError:
             raise
         except Exception as exc:
             raise DownloadError(str(exc)) from exc
+
         info = self._to_info(data, url)
         fmt = None
         if data.get("requested_formats"):
             fmt = self._format(data["requested_formats"][0])
         elif data.get("format_id"):
             fmt = self._format(data)
+
         return DownloadResult(
-            filename, info.title, filename.suffix.lstrip("."), filename.stat().st_size,
-            info.duration, fmt, info,
+            filename,
+            info.title,
+            filename.suffix.lstrip("."),
+            filename.stat().st_size,
+            info.duration,
+            fmt,
+            info,
         )
 
     def _to_info(self, data: dict[str, Any], url: str) -> MediaInfo:
-        formats = tuple(self._format(item) for item in data.get("formats", []) if item.get("format_id"))
+        formats = tuple(
+            self._format(item)
+            for item in data.get("formats", [])
+            if item.get("format_id")
+        )
         return MediaInfo(
-            id=str(data.get("id", "")), title=str(data.get("title") or data.get("id") or "media"),
+            id=str(data.get("id", "")),
+            title=str(data.get("title") or data.get("id") or "media"),
             webpage_url=str(data.get("webpage_url") or url),
             extractor=data.get("extractor_key") or data.get("extractor"),
-            uploader=data.get("uploader") or data.get("channel"), duration=data.get("duration"),
-            thumbnail=data.get("thumbnail"), description=data.get("description"),
-            is_live=bool(data.get("is_live")), formats=formats, raw=data,
+            uploader=data.get("uploader") or data.get("channel"),
+            duration=data.get("duration"),
+            thumbnail=data.get("thumbnail"),
+            description=data.get("description"),
+            is_live=bool(data.get("is_live")),
+            formats=formats,
+            raw=data,
         )
