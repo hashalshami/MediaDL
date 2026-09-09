@@ -14,6 +14,7 @@ from .formats.selector import select_format, sort_formats
 from .models import DownloadResult, MediaInfo, ProgressCallback, ProgressEvent
 from .utils import format_filesize
 
+
 class Downloader:
     """Synchronous public MediaDL API."""
 
@@ -64,8 +65,17 @@ class Downloader:
         out = Path(output_dir or self.config.output_dir)
         out.mkdir(parents=True, exist_ok=True)
         quality_value = quality or self.config.quality
-        size_limit = max_filesize if max_filesize is not None else self.config.max_filesize
-        fmt = select_format(quality_value, audio_only=audio_only, max_filesize=size_limit, merge_format=self.config.merge_format)
+        size_limit = (
+            max_filesize
+            if max_filesize is not None
+            else self.config.max_filesize
+        )
+        fmt = select_format(
+            quality_value,
+            audio_only=audio_only,
+            max_filesize=size_limit,
+            merge_format=self.config.merge_format,
+        )
         template = filename_template or self.config.filename_template
         template = str(out / template)
         attempts = self.config.retries if retries is None else retries
@@ -78,13 +88,24 @@ class Downloader:
             downloaded = int(data.get("downloaded_bytes") or 0)
             total = data.get("total_bytes") or data.get("total_bytes_estimate")
             percent = downloaded / total * 100 if total else None
-            event = ProgressEvent(status=status, downloaded=downloaded, total=total,
-                                  percent=percent, speed=data.get("speed"), eta=data.get("eta"),
-                                  filename=Path(data["filename"]) if data.get("filename") else None,
-                                  message=data.get("info_dict", {}).get("title"))
+            event = ProgressEvent(
+                status=status,
+                downloaded=downloaded,
+                total=total,
+                percent=percent,
+                speed=data.get("speed"),
+                eta=data.get("eta"),
+                filename=(
+                    Path(data["filename"])
+                    if data.get("filename")
+                    else None
+                ),
+                message=data.get("info_dict", {}).get("title"),
+            )
             result = on_progress(event)
             if inspect.isawaitable(result):
-                # Sync API deliberately does not own an event loop; callers should use AsyncDownloader.
+                # The sync API deliberately does not own an event loop.
+                # Callers with async callbacks should use AsyncDownloader.
                 return
 
         options: dict[str, Any] = {
@@ -97,11 +118,18 @@ class Downloader:
             "noplaylist": True,
         }
         if audio_only:
-            options["postprocessors"] = [{"key": "FFmpegExtractAudio", "preferredcodec": audio_format or "mp3"}]
+            options["postprocessors"] = [
+                {
+                    "key": "FFmpegExtractAudio",
+                    "preferredcodec": audio_format or "mp3",
+                }
+            ]
         for attempt in range(attempts + 1):
             try:
                 if on_progress:
-                    on_progress(ProgressEvent(status="started", message=url))
+                    on_progress(
+                        ProgressEvent(status="started", message=url)
+                    )
                 result = self._engine.download(url, options)
                 if size_limit is not None:
                     limit = format_filesize(size_limit)
@@ -109,30 +137,42 @@ class Downloader:
                         try:
                             result.path.unlink(missing_ok=True)
                         finally:
-                            raise DownloadError(f"Downloaded file is {result.filesize} bytes; limit is {limit} bytes")
+                            raise DownloadError(
+                                f"Downloaded file is {result.filesize} bytes; "
+                                f"limit is {limit} bytes"
+                            )
                 if on_progress:
-                    on_progress(ProgressEvent(status="finished", downloaded=result.filesize, total=result.filesize,
-                                              percent=100.0, filename=result.path, message=result.title))
+                    on_progress(
+                        ProgressEvent(
+                            status="finished",
+                            downloaded=result.filesize,
+                            total=result.filesize,
+                            percent=100.0,
+                            filename=result.path,
+                            message=result.title,
+                        )
+                    )
                 return result
             except Exception as exc:
                 last_error = exc
                 if attempt >= attempts:
                     break
-                time.sleep(self.config.retry_sleep * (2 ** attempt))
+                time.sleep(self.config.retry_sleep * (2**attempt))
         assert last_error is not None
         raise last_error
 
     def close(self) -> None:
         return None
 
-    def __enter__(self) -> "Downloader":
+    def __enter__(self) -> Downloader:
         return self
 
     def __exit__(self, *_: object) -> None:
         self.close()
 
+
 class AsyncDownloader:
-    """Async facade that runs the blocking extraction engine in a worker thread."""
+    """Async facade that runs the blocking engine in a worker thread."""
 
     def __init__(self, config: DownloaderConfig | None = None, **kwargs: Any) -> None:
         self._sync = Downloader(config, **kwargs)
@@ -149,7 +189,7 @@ class AsyncDownloader:
     async def close(self) -> None:
         self._sync.close()
 
-    async def __aenter__(self) -> "AsyncDownloader":
+    async def __aenter__(self) -> AsyncDownloader:
         return self
 
     async def __aexit__(self, *_: object) -> None:
